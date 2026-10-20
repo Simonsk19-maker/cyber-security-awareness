@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How safe is our business? — Cyber Security Self-Check</title>
+<meta name="description" content="A quick tick-box self-check for small businesses. Score how safe you are and get a prioritised list of what to fix.">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site-head">
+  <div class="wrap">
+    <a href="index.html" class="brand"><span class="dot"></span> Cyber Security Awareness</a>
+    <nav class="nav">
+      <a href="index.html">Home</a>
+      <a href="guides/phishing.html">Phishing</a>
+      <a href="guides/passwords-mfa.html">Passwords &amp; 2FA</a>
+      <a href="guides/ransomware-backups.html">Backups</a>
+      <a href="self-check.html">Self-check</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="hero">
+    <span class="badge">Takes about 3 minutes</span>
+    <h1>How safe is our business?</h1>
+    <p>Tick the things you already do. You'll get a score out of 100 and a short,
+    ordered list of what to fix first — biggest wins at the top. Nothing is sent
+    anywhere; it all works in your browser.</p>
+  </section>
+
+  <article>
+    <button class="print-btn no-print" onclick="window.print()">🖨️ Print / Save PDF</button>
+    <h1 style="font-size:1.3rem">Your checklist</h1>
+    <p class="lead">Only tick a box if it's true for your whole business, not just you.</p>
+
+    <form id="scForm"><div id="scGroups"></div></form>
+
+    <div class="sc-actions no-print">
+      <button type="button" class="sc-btn" onclick="scScore()">Show my score</button>
+      <button type="button" class="sc-btn secondary" onclick="scReset()">Clear</button>
+    </div>
+
+    <div id="scResult" class="score-box">
+      <div class="score-num"><span id="scNum">0</span>/100</div>
+      <div class="score-rating" id="scRating"></div>
+      <div class="meter"><span id="scBar"></span></div>
+      <p id="scBlurb" style="margin:6px 0 0;color:var(--muted)"></p>
+      <div class="todo" id="scTodo"></div>
+    </div>
+
+    <a class="back no-print" href="index.html">← Back to all topics</a>
+  </article>
+</div>
+
+<footer><div class="wrap">
+  <span>Free educational resource — share freely to help others stay safe online.</span>
+  <span>Based on UK NCSC &amp; Action Fraud guidance. General awareness, not formal advice.</span>
+</div></footer>
+
+<script>
+// Each item: question, why it matters, points, link to the matching guide.
+const ITEMS = [
+ {g:"Accounts &amp; passwords", q:"2-factor login is on for email and Microsoft 365 / Google", why:"Stops most break-ins even if a password leaks.", pts:10, link:"guides/passwords-mfa.html"},
+ {g:"Accounts &amp; passwords", q:"Staff use a password manager and don't reuse passwords", why:"One leaked password shouldn't open everything.", pts:6, link:"guides/passwords-mfa.html"},
+ {g:"Accounts &amp; passwords", q:"Default passwords were changed on routers, Wi-Fi and admin accounts", why:"Default logins are public knowledge.", pts:5, link:"guides/passwords-mfa.html"},
+ {g:"Backups", q:"Important data is backed up automatically", why:"You can recover from ransomware, theft or a dead disk.", pts:8, link:"guides/ransomware-backups.html"},
+ {g:"Backups", q:"A backup copy is kept off-site and disconnected", why:"Ransomware encrypts backups it can reach.", pts:6, link:"guides/ransomware-backups.html"},
+ {g:"Backups", q:"We've actually restored from a backup to check it works", why:"An untested backup is a guess, not a safety net.", pts:5, link:"guides/ransomware-backups.html"},
+ {g:"Devices &amp; updates", q:"Automatic updates are on for Windows/macOS and main apps", why:"Most attacks use known, already-patched holes.", pts:8, link:"guides/devices-updates.html"},
+ {g:"Devices &amp; updates", q:"Antivirus and the firewall are switched on", why:"Basic protection catches common malware.", pts:6, link:"guides/devices-updates.html"},
+ {g:"Devices &amp; updates", q:"Laptops and phones are encrypted and lock with a PIN/password", why:"A lost device then can't leak your data.", pts:6, link:"guides/devices-updates.html"},
+ {g:"Devices &amp; updates", q:"No out-of-support (end-of-life) Windows or software is in use", why:"Unsupported kit stops getting security fixes.", pts:5, link:"guides/devices-updates.html"},
+ {g:"People &amp; phishing", q:"Staff have had phishing awareness guidance", why:"People are the most targeted way in.", pts:7, link:"guides/phishing.html"},
+ {g:"People &amp; phishing", q:"Staff know how to report a suspicious email", why:"A fast report limits the damage.", pts:5, link:"guides/phishing.html"},
+ {g:"Access &amp; money", q:"Staff have only the access they need, and leavers are removed promptly", why:"Limits what one hacked account can reach.", pts:6, link:"guides/scams-fraud.html"},
+ {g:"Access &amp; money", q:"Bank-detail changes and big payments are verified by phone and a second person", why:"Stops invoice and 'boss' fraud.", pts:6, link:"guides/scams-fraud.html"},
+ {g:"Remote &amp; plan", q:"Remote workers avoid banking/admin on open public Wi-Fi", why:"Open Wi-Fi can be watched.", pts:4, link:"guides/remote-wifi.html"},
+ {g:"Remote &amp; plan", q:"We know who to contact and what to do if something goes wrong", why:"A plan turns a crisis into a checklist.", pts:7, link:"guides/incident-response.html"}
+];
+const KEY='sii-selfcheck-v1';
+
+function scRender(){
+  const groups={}; ITEMS.forEach((it,i)=>{(groups[it.g]=groups[it.g]||[]).push({...it,i});});
+  let saved={}; try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+  let html='';
+  for(const g in groups){
+    html+=`<div class="sc-group"><h2>${g}</h2>`;
+    groups[g].forEach(it=>{
+      const on = saved[it.i] ? 'checked':'';
+      html+=`<label class="sc-item"><input type="checkbox" data-i="${it.i}" ${on}>
+        <span><span class="q">${it.q}</span><br><span class="why">${it.why}</span></span></label>`;
+    });
+    html+=`</div>`;
+  }
+  document.getElementById('scGroups').innerHTML=html;
+  document.querySelectorAll('#scGroups input').forEach(cb=>cb.addEventListener('change',scSave));
+}
+function scSave(){
+  const s={}; document.querySelectorAll('#scGroups input').forEach(cb=>{ if(cb.checked) s[cb.dataset.i]=1; });
+  try{localStorage.setItem(KEY,JSON.stringify(s))}catch(e){}
+}
+function scReset(){
+  try{localStorage.removeItem(KEY)}catch(e){}
+  document.querySelectorAll('#scGroups input').forEach(cb=>cb.checked=false);
+  document.getElementById('scResult').classList.remove('show');
+}
+function scScore(){
+  let score=0; const missing=[];
+  document.querySelectorAll('#scGroups input').forEach(cb=>{
+    const it=ITEMS[+cb.dataset.i];
+    if(cb.checked) score+=it.pts; else missing.push(it);
+  });
+  missing.sort((a,b)=>b.pts-a.pts);
+  let rating,colour,blurb;
+  if(score>=85){rating='Strong';colour='#047857';blurb='Great — you have the important basics in place. Keep them up, and fix any gaps below.';}
+  else if(score>=60){rating='Fair — a few gaps';colour='#1d4ed8';blurb='A solid start. The items below are your quickest wins.';}
+  else if(score>=35){rating='Needs work';colour='#b45309';blurb='Some important protections are missing. Start at the top of the list — those matter most.';}
+  else {rating='At risk';colour='#b91c1c';blurb='Several key protections are missing. Please work through the list below, starting at the top.';}
+  document.getElementById('scNum').textContent=score;
+  const rEl=document.getElementById('scRating'); rEl.textContent=rating; rEl.style.color=colour;
+  const bar=document.getElementById('scBar'); bar.style.width=score+'%'; bar.style.background=colour;
+  document.getElementById('scBlurb').textContent=blurb;
+  let todo='';
+  if(missing.length){
+    todo='<h3>What to fix first</h3><ol>'+missing.map(it=>
+      `<li><strong>${it.q}.</strong> ${it.why} <a href="${it.link}">How →</a></li>`).join('')+'</ol>';
+  } else {
+    todo='<h3>Nothing outstanding — nice work. 🎉</h3><p class="why">Re-check every few months, and after any big change.</p>';
+  }
+  document.getElementById('scTodo').innerHTML=todo;
+  const box=document.getElementById('scResult'); box.classList.add('show'); box.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+scRender();
+</script>
+</body>
+</html>
